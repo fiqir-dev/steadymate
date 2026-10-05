@@ -1,0 +1,138 @@
+.plan-usage-panel {
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.plan-usage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 17px;
+}
+
+.plan-usage-eyebrow {
+  margin: 0 0 5px;
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.plan-usage-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+  text-transform: capitalize;
+}
+
+.plan-usage-header > div > p:last-child {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.plan-usage-upgrade {
+  flex: 0 0 auto;
+  font-size: 0.76rem;
+}
+
+.plan-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.plan-usage-item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.plan-usage-item-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.plan-usage-item-heading strong {
+  color: var(--ink);
+  font-size: 0.76rem;
+}
+
+.plan-usage-item-heading > span {
+  color: var(--muted);
+  font-size: 0.69rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.plan-usage-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.plan-usage-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width 180ms ease;
+}
+
+.plan-usage-meter span.near-limit {
+  background: #d99036;
+}
+
+.plan-usage-item > small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.plan-usage-included {
+  margin: 13px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 780px) {
+  .plan-usage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .plan-usage-panel {
+    padding: 17px;
+  }
+
+  .plan-usage-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .plan-usage-upgrade {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .plan-usage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-usage-meter span {
+    transition: none;
+  }
+}

@@ -1,0 +1,249 @@
+.premium-page {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.premium-page-header {
+  margin-bottom: 20px;
+}
+
+.premium-eyebrow {
+  margin: 0 0 6px;
+  color: var(--brand);
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.premium-page-header h1 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: clamp(1.65rem, 3vw, 2.2rem);
+  letter-spacing: -0.04em;
+}
+
+.premium-page-header > p:last-child,
+.premium-offer-card > div:first-child > p:last-child,
+.premium-payment-status > div > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.premium-state,
+.premium-error {
+  margin-bottom: 16px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.81rem;
+}
+
+.premium-error {
+  border-color: rgba(197, 55, 71, 0.28);
+  background: rgba(197, 55, 71, 0.07);
+  color: #b42335;
+}
+
+.premium-offer-card,
+.premium-comparison,
+.premium-payment-status {
+  margin-bottom: 17px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.premium-offer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-color: rgba(99, 91, 255, 0.35);
+}
+
+.premium-offer-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 12px;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(99, 91, 255, 0.1);
+  color: var(--brand);
+}
+
+.premium-offer-card h2,
+.premium-comparison-heading h2,
+.premium-payment-status h2 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 1.14rem;
+}
+
+.premium-price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--ink);
+}
+
+.premium-price strong {
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+  letter-spacing: -0.05em;
+}
+
+.premium-price span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.premium-comparison-heading {
+  margin-bottom: 15px;
+}
+
+.premium-table-wrap {
+  overflow-x: auto;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.premium-table th,
+.premium-table td {
+  padding: 13px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.79rem;
+}
+
+.premium-table thead th {
+  border-top: 0;
+  color: var(--ink);
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
+.premium-table tbody th {
+  min-width: 180px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.premium-table td:last-child {
+  color: var(--ink);
+}
+
+.premium-table .premium-ai-row {
+  background: rgba(99, 91, 255, 0.07);
+}
+
+.premium-ai-row th,
+.premium-ai-row td {
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.premium-ai-row th span {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--brand);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+}
+
+.premium-payment-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.premium-pending-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.premium-pending-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.premium-support-link,
+.premium-back-link {
+  color: var(--brand);
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.premium-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #218b5b;
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.premium-back-link {
+  display: inline-block;
+  margin: 1px 0 15px;
+}
+
+.premium-manual-info {
+  margin-top: 0;
+}
+
+.premium-checklist {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+  list-style: none;
+}
+
+.premium-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.premium-checklist svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: #15803d;
+}
+
+@media (max-width: 650px) {
+  .premium-offer-card,
+  .premium-payment-status {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .premium-pending-actions {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .premium-table th,
+  .premium-table td {
+    padding: 11px 9px;
+    font-size: 0.72rem;
+  }
+}

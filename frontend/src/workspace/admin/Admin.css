@@ -1,0 +1,230 @@
+.admin-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.admin-header {
+  margin-bottom: 22px;
+}
+
+.admin-kicker {
+  margin: 0 0 8px;
+  color: var(--brand);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  letter-spacing: -0.05em;
+}
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.admin-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.admin-stat-card svg {
+  color: var(--brand);
+}
+
+.admin-stat-card small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-stat-card strong {
+  font-size: 1.2rem;
+}
+
+.admin-panel {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.admin-panel-header {
+  margin-bottom: 14px;
+}
+
+.admin-panel-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.admin-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(99, 91, 255, 0.02);
+}
+
+.admin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-card-head strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.admin-card-head small {
+  color: var(--muted);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.pending {
+  color: #9a5b00;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.status-pill.approved,
+.status-pill.paid,
+.status-pill.admin,
+.status-pill.premium {
+  color: #0f766e;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.status-pill.rejected,
+.status-pill.user,
+.status-pill.free {
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.status-pill.neutral {
+  color: var(--ink);
+  background: rgba(99, 91, 255, 0.08);
+}
+
+.admin-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.admin-withdrawal-details {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-withdrawal-details strong {
+  color: var(--ink);
+}
+
+.admin-withdrawal-note {
+  margin: 12px 0 0;
+  color: #0f766e;
+  font-size: 0.82rem;
+}
+
+.admin-withdrawal-note.rejected {
+  color: #991b1b;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-payment-screenshot {
+  display: block;
+  max-width: min(100%, 520px);
+  max-height: 520px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  object-fit: contain;
+  background: var(--surface);
+}
+
+.admin-screenshot-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.admin-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(197, 55, 71, 0.2);
+  border-radius: 12px;
+  background: rgba(197, 55, 71, 0.06);
+  color: #b42335;
+}
+
+@media (max-width: 900px) {
+  .admin-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card-head,
+  .admin-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,793 @@
+/* =========================================================
+   STEADY MATE — APP CSS
+   APP / DASHBOARD ONLY
+   Workspace styles belong in WorkspacePage.css
+   ========================================================= */
+
+
+/* =========================================================
+   APP ROOT
+   ========================================================= */
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app {
+  min-height: 100vh;
+  width: 100%;
+}
+
+
+/* =========================================================
+   GENERAL APP LAYOUT
+   ========================================================= */
+
+.app-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+
+/* =========================================================
+   DASHBOARD LAYOUT
+   ========================================================= */
+
+.dashboard {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+}
+
+.dashboard-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.dashboard-content {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   DASHBOARD HEADER
+   ========================================================= */
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-bottom: 28px;
+}
+
+.dashboard-header-left {
+  min-width: 0;
+}
+
+.dashboard-title {
+  margin: 0;
+
+  font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.dashboard-subtitle {
+  margin: 8px 0 0;
+
+  font-size: 0.95rem;
+  line-height: 1.6;
+
+  color: var(--muted, #6b7280);
+}
+
+
+/* =========================================================
+   DASHBOARD ACTIONS
+   ========================================================= */
+
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   DASHBOARD GRID
+   ========================================================= */
+
+.dashboard-grid {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+
+/* =========================================================
+   DASHBOARD CARDS
+   ========================================================= */
+
+.dashboard-card {
+  min-width: 0;
+
+  padding: 20px;
+
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 16px;
+
+  background: var(--surface, #ffffff);
+
+  box-sizing: border-box;
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+}
+
+.dashboard-card-title {
+  margin: 0;
+
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.dashboard-card-subtitle {
+  margin: 5px 0 0;
+
+  font-size: 0.85rem;
+
+  color: var(--muted, #6b7280);
+}
+
+
+/* =========================================================
+   STAT CARDS
+   ========================================================= */
+
+.dashboard-stat-card {
+  grid-column: span 3;
+
+  min-width: 0;
+
+  padding: 20px;
+
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 16px;
+
+  background: var(--surface, #ffffff);
+}
+
+.dashboard-stat-label {
+  margin: 0 0 8px;
+
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+}
+
+.dashboard-stat-value {
+  margin: 0;
+
+  font-size: 1.8rem;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.dashboard-stat-change {
+  margin-top: 8px;
+
+  font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   DASHBOARD SECTIONS
+   ========================================================= */
+
+.dashboard-section {
+  margin-top: 22px;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-bottom: 14px;
+}
+
+.dashboard-section-title {
+  margin: 0;
+
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   QUICK ACTIONS
+   ========================================================= */
+
+.dashboard-quick-actions {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.dashboard-quick-action {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 15px;
+
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 14px;
+
+  background: var(--surface, #ffffff);
+
+  color: inherit;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.dashboard-quick-action:hover {
+  transform: translateY(-1px);
+}
+
+.dashboard-quick-action-icon {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+}
+
+.dashboard-quick-action-content {
+  min-width: 0;
+}
+
+.dashboard-quick-action-title {
+  margin: 0;
+
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.dashboard-quick-action-text {
+  margin: 4px 0 0;
+
+  font-size: 0.78rem;
+
+  color: var(--muted, #6b7280);
+}
+
+
+/* =========================================================
+   PROGRESS
+   ========================================================= */
+
+.dashboard-progress {
+  width: 100%;
+}
+
+.dashboard-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 8px;
+}
+
+.dashboard-progress-label {
+  min-width: 0;
+
+  font-size: 0.86rem;
+}
+
+.dashboard-progress-value {
+  flex-shrink: 0;
+
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.dashboard-progress-track {
+  width: 100%;
+  height: 8px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: rgba(127, 127, 127, 0.14);
+}
+
+.dashboard-progress-fill {
+  height: 100%;
+
+  border-radius: inherit;
+
+  transition: width 300ms ease;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.dashboard-empty {
+  min-height: 260px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  padding: 30px;
+
+  border: 1px dashed var(--line, #dcdfe4);
+  border-radius: 16px;
+
+  box-sizing: border-box;
+}
+
+.dashboard-empty-icon {
+  width: 52px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 14px;
+
+  border-radius: 14px;
+
+  background: rgba(127, 127, 127, 0.1);
+}
+
+.dashboard-empty-title {
+  margin: 0;
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dashboard-empty-text {
+  max-width: 420px;
+
+  margin: 8px 0 0;
+
+  font-size: 0.88rem;
+  line-height: 1.6;
+
+  color: var(--muted, #6b7280);
+}
+
+
+/* =========================================================
+   GENERAL APP BUTTONS
+   ========================================================= */
+
+.app-button {
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 9px 15px;
+
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  text-decoration: none;
+
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.app-button:hover {
+  transform: translateY(-1px);
+}
+
+.app-button:active {
+  transform: translateY(0);
+}
+
+.app-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+   ========================================================= */
+
+.app-button-primary {
+  background: var(--brand, #111827);
+  color: #ffffff;
+}
+
+.app-button-primary:hover {
+  opacity: 0.92;
+}
+
+
+/* =========================================================
+   SECONDARY BUTTON
+   ========================================================= */
+
+.app-button-secondary {
+  background: var(--surface, #ffffff);
+
+  color: inherit;
+
+  border-color: var(--line, #e5e7eb);
+}
+
+.app-button-secondary:hover {
+  background: rgba(127, 127, 127, 0.06);
+}
+
+
+/* =========================================================
+   ICON BUTTON
+   ========================================================= */
+
+.app-icon-button {
+  width: 40px;
+  height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+
+  background: var(--surface, #ffffff);
+  color: inherit;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.app-icon-button:hover {
+  background: rgba(127, 127, 127, 0.07);
+}
+
+.app-icon-button:active {
+  transform: scale(0.97);
+}
+
+
+/* =========================================================
+   USER / PROFILE AREA
+   ========================================================= */
+
+.app-user {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.app-user-avatar {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+}
+
+.app-user-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.app-user-info {
+  min-width: 0;
+}
+
+.app-user-name {
+  margin: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.app-user-email {
+  margin: 3px 0 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 0.76rem;
+
+  color: var(--muted, #6b7280);
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.app-loading {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+}
+
+.app-loading-content {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  text-align: center;
+}
+
+.app-spinner {
+  width: 28px;
+  height: 28px;
+
+  border: 3px solid rgba(127, 127, 127, 0.2);
+  border-top-color: currentColor;
+
+  border-radius: 50%;
+
+  animation: app-spin 700ms linear infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.app-error {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 10px;
+
+  background: rgba(220, 38, 38, 0.06);
+
+  box-sizing: border-box;
+}
+
+.app-error-title {
+  margin: 0;
+
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.app-error-text {
+  margin: 4px 0 0;
+
+  font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+html[data-theme="dark"] .dashboard-card,
+html[data-theme="dark"] .dashboard-stat-card,
+html[data-theme="dark"] .dashboard-quick-action,
+html[data-theme="dark"] .app-icon-button,
+html[data-theme="dark"] .app-button-secondary {
+  background: var(--surface, #171717);
+
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="dark"] .dashboard-empty {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .dashboard-quick-action:hover,
+html[data-theme="dark"] .app-icon-button:hover,
+html[data-theme="dark"] .app-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+
+/* =========================================================
+   RESPONSIVE — TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+  .dashboard-main {
+    padding: 20px;
+  }
+
+  .dashboard-stat-card {
+    grid-column: span 6;
+  }
+
+  .dashboard-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE — MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .dashboard-main {
+    padding: 16px;
+  }
+
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 14px;
+
+    margin-bottom: 22px;
+  }
+
+  .dashboard-actions {
+    width: 100%;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-stat-card {
+    grid-column: auto;
+  }
+
+  .dashboard-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card {
+    padding: 16px;
+  }
+
+  .dashboard-stat-card {
+    padding: 16px;
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE — SMALL PHONE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .dashboard-main {
+    padding: 12px;
+  }
+
+  .dashboard-title {
+    font-size: 1.45rem;
+  }
+
+  .dashboard-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .dashboard-card,
+  .dashboard-stat-card {
+    border-radius: 13px;
+  }
+
+  .app-button {
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+}

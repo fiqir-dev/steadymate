@@ -1,0 +1,220 @@
+.notes-page,
+.flashcards-page {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.study-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.study-tool-icon,
+.study-tool-empty-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(99, 91, 255, 0.1);
+  color: var(--brand);
+}
+
+.study-tool-eyebrow {
+  margin: 0 0 5px !important;
+  color: var(--brand) !important;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.study-tool-header h1 {
+  margin: 0 0 5px;
+  color: var(--ink);
+  font-size: clamp(1.65rem, 3vw, 2.15rem);
+  letter-spacing: -0.04em;
+}
+
+.study-tool-header p:last-child {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.study-tool-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 26px rgba(30, 32, 70, 0.04);
+}
+
+.study-tool-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.study-tool-controls-row select {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.study-tool-controls-row select:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.study-tool-controls-row .btn,
+.study-tool-empty-inline .btn,
+.flashcards-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.study-tool-selected {
+  margin: 10px 0 0 !important;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.study-tool-selected strong {
+  color: var(--ink);
+}
+
+.study-tool-error,
+.study-tool-success {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(197, 55, 71, 0.28);
+  border-radius: 11px;
+  background: rgba(197, 55, 71, 0.07);
+  color: #b42335;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.study-tool-success {
+  border-color: rgba(32, 145, 93, 0.3);
+  background: rgba(32, 145, 93, 0.07);
+  color: #218b5b;
+}
+
+.study-tool-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.study-tool-content-loading {
+  justify-content: center;
+  min-height: 180px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.study-tool-spinner {
+  animation: study-tool-spin 0.9s linear infinite;
+}
+
+@keyframes study-tool-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.study-tool-empty-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.study-tool-empty-inline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.study-tool-empty {
+  display: grid;
+  justify-items: center;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.study-tool-empty-icon {
+  margin-bottom: 13px;
+}
+
+.study-tool-empty h2 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.study-tool-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+html[data-theme="dark"] .study-tool-card {
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .study-tool-error {
+  border-color: #5c3039;
+  background: #24151a;
+  color: #ff9daa;
+}
+
+html[data-theme="dark"] .study-tool-success {
+  border-color: rgba(112, 210, 158, 0.35);
+  background: rgba(32, 145, 93, 0.12);
+  color: #70d29e;
+}
+
+@media (max-width: 560px) {
+  .study-tool-header {
+    align-items: flex-start;
+  }
+
+  .study-tool-controls-row,
+  .study-tool-empty-inline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .study-tool-controls-row .btn,
+  .study-tool-empty-inline .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-tool-spinner {
+    animation: none;
+  }
+}

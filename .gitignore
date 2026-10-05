@@ -1,0 +1,13 @@
+*.log
+
+# Environment files may contain private service credentials.
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependency/build output
+node_modules/
+dist/
+coverage/

@@ -25,47 +25,6 @@ import {
 const app = express()
 const PORT = process.env.PORT || 5000
 
-const ADMIN_SCREENSHOT_FRONTEND_ORIGIN =
-  "https://steady-mate.netlify.app"
-
-const getAllowedAdminScreenshotOrigin = (
-  origin: string | undefined
-): string | false => {
-  const configuredFrontendOrigins = (process.env.FRONTEND_URL || "")
-    .split(",")
-    .map((url) => {
-      try {
-        return new URL(url.trim()).origin
-      } catch {
-        return ""
-      }
-    })
-    .filter(Boolean)
-
-  const allowedOrigins = new Set([
-    ...configuredFrontendOrigins,
-    ADMIN_SCREENSHOT_FRONTEND_ORIGIN,
-    "http://localhost:5173",
-  ])
-
-  return origin && allowedOrigins.has(origin) ? origin : false
-}
-
-const adminScreenshotSessionCors = cors({
-  origin: (origin, callback) => {
-    const allowedOrigin = getAllowedAdminScreenshotOrigin(origin)
-
-    console.info("[admin-screenshot-view]", {
-      event: "cors_origin_check",
-      origin: origin || "",
-      allowed: Boolean(allowedOrigin),
-    })
-
-    callback(null, allowedOrigin)
-  },
-  credentials: true,
-})
-
 // Global CORS
 app.use(
   cors({
@@ -94,12 +53,6 @@ app.use(
     },
     credentials: true,
   })
-)
-
-// Screenshot session preflight
-app.options(
-  "/api/admin/payments/:id/screenshot/view-session",
-  adminScreenshotSessionCors
 )
 
 // Screenshot request detection
@@ -171,12 +124,7 @@ app.use("/api/telegram", telegramRoutes)
 app.use("/api/premium", premiumRoutes)
 app.use("/api/referrals", referralRoutes)
 
-// Admin routes use screenshot-session CORS
-app.use(
-  "/api/admin",
-  adminScreenshotSessionCors,
-  adminRoutes
-)
+app.use("/api/admin", adminRoutes)
 
 // Health check
 app.get("/api/health", (_req, res) => {

@@ -102,49 +102,75 @@ function getAdminUserEmail(user: AdminUserReference | undefined) {
 }
 
 function AdminPaymentScreenshot({ paymentId }: { paymentId: string }) {
-  const [viewReady, setViewReady] = useState(false)
+  const [opening, setOpening] = useState(false)
   const [failureMessage, setFailureMessage] = useState("")
 
-  useEffect(() => {
+  const viewScreenshot = async () => {
     const token = sessionStorage.getItem("steadymate_token")
     if (!token) {
-      setFailureMessage("Unable to prepare screenshot link.")
+      setFailureMessage("Your admin session has expired. Please sign in again.")
       return
     }
-    let cancelled = false
-    const viewSessionUrl = `${API_URL}/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view-session`
-    fetch(viewSessionUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Unable to prepare screenshot link (HTTP ${response.status})`)
-        }
-        if (!cancelled) setViewReady(true)
-      })
-      .catch((requestError: unknown) => {
-        const message = requestError instanceof Error ? requestError.message : "Network request failed"
-        if (!cancelled) setFailureMessage(`Screenshot failed: ${message}`)
-      })
 
-    return () => {
-      cancelled = true
+    const screenshotWindow = window.open("about:blank", "_blank")
+    if (!screenshotWindow) {
+      setFailureMessage("Allow pop-ups to view the payment screenshot.")
+      return
     }
-  }, [paymentId])
+    screenshotWindow.opener = null
+    setOpening(true)
+    setFailureMessage("")
 
-  if (failureMessage) return <p className="admin-screenshot-note">{failureMessage}</p>
-  if (!viewReady) return <p className="admin-screenshot-note">Preparing screenshot link…</p>
+    try {
+      const response = await fetch(
+        `${API_URL}/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`
+        try {
+          const data = await response.json()
+          if (typeof data.message === "string") message = data.message
+        } catch {
+          // Keep the HTTP status as the fallback for non-JSON error responses.
+        }
+        throw new Error(message)
+      }
+
+      const image = await response.blob()
+      const imageUrl = URL.createObjectURL(image)
+      screenshotWindow.addEventListener(
+        "load",
+        () => URL.revokeObjectURL(imageUrl),
+        { once: true },
+      )
+      screenshotWindow.location.replace(imageUrl)
+      window.setTimeout(() => URL.revokeObjectURL(imageUrl), 60_000)
+    } catch (requestError) {
+      screenshotWindow.close()
+      const message = requestError instanceof Error
+        ? requestError.message
+        : "Unable to retrieve the payment screenshot."
+      setFailureMessage(`Screenshot failed: ${message}`)
+    } finally {
+      setOpening(false)
+    }
+  }
+
   return (
-    <a
-      className="btn btn-secondary"
-      href={`${API_URL}/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view`}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      View Screenshot ↗
-    </a>
+    <>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={viewScreenshot}
+        disabled={opening}
+      >
+        {opening ? "Opening..." : "View Screenshot ↗"}
+      </button>
+      {failureMessage && (
+        <p className="admin-screenshot-note" role="alert">{failureMessage}</p>
+      )}
+    </>
   )
 }
 

@@ -1,5 +1,4 @@
 import mongoose from "mongoose"
-import jwt from "jsonwebtoken"
 import { Request, Response } from "express"
 
 import { Payment } from "../models/Payment"
@@ -146,50 +145,6 @@ const getPaymentImageContentType = (image: Buffer): string | null => {
     return "image/webp"
   }
   return null
-}
-
-const ADMIN_SCREENSHOT_VIEW_COOKIE = "admin_screenshot_view"
-const ADMIN_SCREENSHOT_VIEW_COOKIE_TTL_MS = 2 * 60 * 1000
-
-export const createAdminPaymentScreenshotViewSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  const paymentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-  const jwtSecret = process.env.JWT_SECRET
-  if (!jwtSecret || !req.userId) {
-    res.status(401).json({ success: false, message: "Authentication required" })
-    return
-  }
-
-  try {
-    const payment = await Payment.findOne({
-      _id: paymentId,
-      type: { $in: ["premium", null] },
-    }).select("telegramFileId")
-    if (!payment?.telegramFileId) {
-      res.status(404).json({ success: false, message: "Payment screenshot not found" })
-      return
-    }
-
-    const token = jwt.sign(
-      { userId: req.userId, role: "admin", purpose: "admin-screenshot-view" },
-      jwtSecret,
-      { expiresIn: "2m" },
-    )
-    const viewPath = `/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view`
-    res.cookie(ADMIN_SCREENSHOT_VIEW_COOKIE, token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      path: viewPath,
-      maxAge: ADMIN_SCREENSHOT_VIEW_COOKIE_TTL_MS,
-    })
-    res.status(204).end()
-  } catch (error) {
-    console.error("Create admin screenshot view session error:", error)
-    res.status(500).json({ success: false, message: "Unable to prepare screenshot view" })
-  }
 }
 
 export const getAdminPaymentScreenshot = async (

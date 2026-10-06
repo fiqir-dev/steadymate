@@ -112,7 +112,7 @@ function AdminPaymentScreenshot({ paymentId }: { paymentId: string }) {
       return
     }
 
-    const screenshotWindow = window.open("about:blank", "_blank")
+    const screenshotWindow = window.open("", "_blank")
     if (!screenshotWindow) {
       setFailureMessage("Allow pop-ups to view the payment screenshot.")
       return
@@ -139,13 +139,11 @@ function AdminPaymentScreenshot({ paymentId }: { paymentId: string }) {
 
       const image = await response.blob()
       const imageUrl = URL.createObjectURL(image)
-      screenshotWindow.addEventListener(
-        "load",
-        () => URL.revokeObjectURL(imageUrl),
-        { once: true },
+      screenshotWindow.document.open()
+      screenshotWindow.document.write(
+        `<!doctype html><html><head><title>Payment screenshot</title><style>html,body{margin:0;width:100%;height:100%;background:#111}body{display:grid;place-items:center}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body><img src="${imageUrl}" alt="Payment screenshot" onload="URL.revokeObjectURL(this.src)"></body></html>`,
       )
-      screenshotWindow.location.replace(imageUrl)
-      window.setTimeout(() => URL.revokeObjectURL(imageUrl), 60_000)
+      screenshotWindow.document.close()
     } catch (requestError) {
       screenshotWindow.close()
       const message = requestError instanceof Error

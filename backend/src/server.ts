@@ -20,18 +20,36 @@ import {
 
 const app = express()
 const PORT = process.env.PORT || 5000
+const ADMIN_SCREENSHOT_FRONTEND_ORIGIN = "https://steady-mate.netlify.app"
+
+const getAllowedAdminScreenshotOrigin = (origin: string | undefined): string | false => {
+  const configuredFrontendOrigins = (process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((url) => {
+      try {
+        return new URL(url.trim()).origin
+      } catch {
+        return ""
+      }
+    })
+    .filter(Boolean)
+  const allowedOrigins = new Set([
+    ...configuredFrontendOrigins,
+    ADMIN_SCREENSHOT_FRONTEND_ORIGIN,
+    "http://localhost:5173",
+  ])
+  return origin && allowedOrigins.has(origin) ? origin : false
+}
 
 const adminScreenshotSessionCors = cors({
   origin: (origin, callback) => {
-    let configuredFrontendOrigin = ""
-    if (process.env.FRONTEND_URL) {
-      configuredFrontendOrigin = new URL(process.env.FRONTEND_URL).origin
-    }
-    const allowedOrigins = new Set([
-      configuredFrontendOrigin,
-      "http://localhost:5173",
-    ])
-    callback(null, origin && allowedOrigins.has(origin) ? origin : false)
+    const allowedOrigin = getAllowedAdminScreenshotOrigin(origin)
+    console.info("[admin-screenshot-view]", {
+      event: "cors_origin_check",
+      origin: origin || "",
+      allowed: Boolean(allowedOrigin),
+    })
+    callback(null, allowedOrigin)
   },
   credentials: true,
 })

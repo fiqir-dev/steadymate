@@ -15,8 +15,13 @@ import {
 import { getReferralOverview } from "../services/referralService"
 import {
   answerTelegramCallback,
+  getTelegramFile,
   sendTelegramMessage,
 } from "../services/telegramBotService"
+import {
+  deletePaymentScreenshot,
+  uploadPaymentScreenshot,
+} from "../services/cloudinaryService"
 import { configureTelegramWebhook as registerTelegramWebhook } from "../services/telegramWebhookService"
 
 const VERIFICATION_LIFETIME_MS = 10 * 60 * 1000
@@ -24,6 +29,28 @@ const REQUEST_COOLDOWN_MS = 60 * 1000
 
 const hashCode = (code: string) =>
   crypto.createHash("sha256").update(code).digest("hex")
+
+const logPaymentScreenshotError = (
+  event: string,
+  error: unknown,
+  telegramFileId: string,
+): void => {
+  const errorMessage = error instanceof Error ? error.message : "Unknown error"
+  const safeErrorMessage = [
+    process.env.CLOUDINARY_API_SECRET,
+    process.env.CLOUDINARY_API_KEY,
+    process.env.TELEGRAM_BOT_TOKEN,
+    telegramFileId,
+  ]
+    .filter((secret): secret is string => Boolean(secret))
+    .reduce((message, secret) => message.split(secret).join("[REDACTED]"), errorMessage)
+
+  console.error("[telegram-payment-screenshot]", {
+    event,
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    errorMessage: safeErrorMessage,
+  })
+}
 
 type BotLanguage = "en" | "am"
 
@@ -595,6 +622,30 @@ export const handleTelegramWebhook = async (
         return
       }
 
+      let storedScreenshot: { secureUrl: string; publicId: string }
+      try {
+        const telegramImage = await getTelegramFile(screenshotFileId)
+        const declaredLength = Number(telegramImage.headers.get("content-length"))
+        if (Number.isFinite(declaredLength) && declaredLength > 10 * 1024 * 1024) {
+          throw new Error("Payment screenshot exceeds the 10 MB limit")
+        }
+        const image = Buffer.from(await telegramImage.arrayBuffer())
+        if (image.length > 10 * 1024 * 1024) {
+          throw new Error("Payment screenshot exceeds the 10 MB limit")
+        }
+        storedScreenshot = await uploadPaymentScreenshot(image)
+      } catch (error) {
+        logPaymentScreenshotError("storage_failed", error, screenshotFileId)
+        await sendTelegramMessage(
+          chatId,
+          session.language === "am"
+            ? "ስክሪንሾቱን ማስቀመጥ አልተቻለም። እባክዎ እንደገና ይላኩት።"
+            : "We couldn't securely store your screenshot. Please send it again.",
+        )
+        res.status(200).json({ success: true })
+        return
+      }
+
       try {
         await Payment.create({
           userId: session.userId,
@@ -603,6 +654,8 @@ export const handleTelegramWebhook = async (
           telegramUserId: String(telegramUserId),
           telegramChatId: String(chatId),
           telegramFileId: screenshotFileId,
+          screenshotUrl: storedScreenshot.secureUrl,
+          screenshotPublicId: storedScreenshot.publicId,
           telegramUpdateId: update.update_id,
           paymentMethod: session.paymentMethod,
           amount: PREMIUM_PAYMENT_CONFIG.price,
@@ -612,6 +665,11 @@ export const handleTelegramWebhook = async (
           submittedAt: new Date(),
         })
       } catch (error) {
+        try {
+          await deletePaymentScreenshot(storedScreenshot.publicId)
+        } catch (cleanupError) {
+          logPaymentScreenshotError("unused_upload_cleanup_failed", cleanupError, screenshotFileId)
+        }
         if (!(error && typeof error === "object" && "code" in error && error.code === 11000)) {
           throw error
         }

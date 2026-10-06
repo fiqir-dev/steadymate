@@ -15,6 +15,8 @@ export interface IPayment extends Document {
   status: PaymentStatus
   telegramReference?: string
   screenshot?: string
+  screenshotUrl?: string
+  screenshotPublicId?: string
   telegramFileId?: string
   telegramUpdateId?: number
   rejectionReason?: string
@@ -81,6 +83,14 @@ const paymentSchema = new Schema<IPayment>(
       default: "",
     },
     screenshot: {
+      type: String,
+      default: "",
+    },
+    screenshotUrl: {
+      type: String,
+      default: "",
+    },
+    screenshotPublicId: {
       type: String,
       default: "",
     },

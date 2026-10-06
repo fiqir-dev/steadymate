@@ -12,7 +12,7 @@ import {
   REFERRAL_REWARD_PERCENTAGE,
   getReferralRewardValue,
 } from "../config/pricing"
-import { getTelegramFile, sendTelegramMessage } from "../services/telegramBotService"
+import { sendTelegramMessage } from "../services/telegramBotService"
 import { getReferralOverview } from "../services/referralService"
 
 export const getAdminDashboard = async (
@@ -96,8 +96,8 @@ export const getAdminPayments = async (
           paymentMethod: payment.paymentMethod || "",
           status: payment.status,
           telegramReference: payment.telegramReference || "",
-          hasScreenshot: Boolean(payment.telegramFileId || payment.screenshot),
-          screenshotUrl: payment.telegramFileId
+          hasScreenshot: Boolean(payment.screenshotUrl || payment.telegramFileId || payment.screenshot),
+          screenshotUrl: payment.screenshotUrl || payment.telegramFileId || payment.screenshot
             ? `/api/admin/payments/${payment._id}/screenshot`
             : "",
           submittedAt: payment.submittedAt,
@@ -116,154 +116,44 @@ export const getAdminPayments = async (
   }
 }
 
-const getPaymentImageContentType = (image: Buffer): string | null => {
-  if (
-    image.length >= 3 &&
-    image[0] === 0xff &&
-    image[1] === 0xd8 &&
-    image[2] === 0xff
-  ) {
-    return "image/jpeg"
-  }
-  if (
-    image.length >= 8 &&
-    image.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
-  ) {
-    return "image/png"
-  }
-  if (
-    image.length >= 6 &&
-    ["GIF87a", "GIF89a"].includes(image.toString("ascii", 0, 6))
-  ) {
-    return "image/gif"
-  }
-  if (
-    image.length >= 12 &&
-    image.toString("ascii", 0, 4) === "RIFF" &&
-    image.toString("ascii", 8, 12) === "WEBP"
-  ) {
-    return "image/webp"
-  }
-  return null
-}
-
 export const getAdminPaymentScreenshot = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const paymentId = req.params.id
-  let stage = "payment_lookup"
-  let telegramFileId = ""
-  console.info("[admin-screenshot]", {
-    event: "controller_entered",
-    paymentId,
-  })
-  res.once("finish", () => {
-    console.info("[admin-screenshot]", {
-      event: "controller_response_finished",
-      paymentId,
-      status: res.statusCode,
-    })
-  })
   try {
     const payment = await Payment.findOne({
-      _id: paymentId,
+      _id: req.params.id,
       type: { $in: ["premium", null] },
-    }).select("telegramFileId")
-    console.info("[admin-screenshot]", {
-      event: "payment_lookup",
-      paymentId,
-      paymentExists: Boolean(payment),
-      fileIdPresent: Boolean(payment?.telegramFileId),
-    })
-    telegramFileId = payment?.telegramFileId || ""
+    }).select("screenshotUrl")
 
-    if (!payment?.telegramFileId) {
-      console.info("[admin-screenshot]", {
-        event: "response",
-        paymentId,
-        status: 404,
+    if (!payment?.screenshotUrl) {
+      res.status(404).json({
+        success: false,
+        message: "Payment screenshot is not available for this payment.",
       })
-      res.status(404).json({ success: false, message: "Payment screenshot not found" })
       return
     }
 
-    stage = "telegram_file_download"
-    const file = await getTelegramFile(payment.telegramFileId, (event, details) => {
-      console.info("[admin-screenshot]", { event, paymentId, ...details })
-    })
-    const declaredLength = Number(file.headers.get("content-length"))
-    if (Number.isFinite(declaredLength) && declaredLength > 10 * 1024 * 1024) {
-      console.info("[admin-screenshot]", {
-        event: "response",
-        paymentId,
-        status: 413,
-        declaredLength,
+    const screenshotUrl = new URL(payment.screenshotUrl)
+    if (
+      screenshotUrl.protocol !== "https:" ||
+      screenshotUrl.hostname !== "res.cloudinary.com" ||
+      screenshotUrl.username ||
+      screenshotUrl.password
+    ) {
+      res.status(502).json({
+        success: false,
+        message: "Stored payment screenshot URL is invalid.",
       })
-      res.status(413).json({ success: false, message: "Payment screenshot is too large" })
-      return
-    }
-    const image = Buffer.from(await file.arrayBuffer())
-    const contentType = getPaymentImageContentType(image)
-    console.info("[admin-screenshot]", {
-      event: "downloaded_image",
-      paymentId,
-      byteLength: image.length,
-      telegramContentType: file.headers.get("content-type") || "",
-      detectedImageType: contentType,
-    })
-    if (image.length > 10 * 1024 * 1024) {
-      console.info("[admin-screenshot]", {
-        event: "response",
-        paymentId,
-        status: 413,
-        byteLength: image.length,
-      })
-      res.status(413).json({ success: false, message: "Payment screenshot is too large" })
-      return
-    }
-    if (!contentType) {
-      console.info("[admin-screenshot]", {
-        event: "response",
-        paymentId,
-        status: 502,
-        reason: "telegram_file_is_not_a_supported_image",
-      })
-      res.status(502).json({ success: false, message: "Telegram returned an unsupported payment screenshot" })
       return
     }
 
-    res.setHeader("Cache-Control", "private, no-store")
-    res.setHeader("X-Content-Type-Options", "nosniff")
-    res.setHeader("Content-Type", contentType)
-    res.status(200).send(image)
-    console.info("[admin-screenshot]", {
-      event: "response",
-      paymentId,
-      status: 200,
-      contentType,
-      byteLength: image.length,
-    })
+    res.redirect(302, screenshotUrl.toString())
   } catch (error) {
-    const errorStatus = error && typeof error === "object" && "status" in error
-      ? Number(error.status)
-      : undefined
-    const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    const safeErrorMessage = [process.env.TELEGRAM_BOT_TOKEN, telegramFileId]
-      .filter((secret): secret is string => Boolean(secret))
-      .reduce((message, secret) => message.split(secret).join("[REDACTED]"), errorMessage)
-    console.error("[admin-screenshot]", {
-      event: "failure",
-      paymentId,
-      stage,
-      errorName: error instanceof Error ? error.name : "UnknownError",
-      errorMessage: safeErrorMessage,
-      errorStatus: Number.isInteger(errorStatus) ? errorStatus : undefined,
-      responseStatus: 502,
-    })
+    console.error("Get admin payment screenshot error:", error)
     res.status(502).json({
       success: false,
-      message: "Unable to retrieve payment screenshot from Telegram",
+      message: "Unable to retrieve payment screenshot",
     })
   }
 }

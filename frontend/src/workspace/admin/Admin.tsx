@@ -139,11 +139,8 @@ function AdminPaymentScreenshot({ paymentId }: { paymentId: string }) {
 
       const image = await response.blob()
       const imageUrl = URL.createObjectURL(image)
-      screenshotWindow.document.open()
-      screenshotWindow.document.write(
-        `<!doctype html><html><head><title>Payment screenshot</title><style>html,body{margin:0;width:100%;height:100%;background:#111}body{display:grid;place-items:center}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body><img src="${imageUrl}" alt="Payment screenshot" onload="URL.revokeObjectURL(this.src)"></body></html>`,
-      )
-      screenshotWindow.document.close()
+      screenshotWindow.addEventListener("load", () => URL.revokeObjectURL(imageUrl), { once: true })
+      screenshotWindow.location.href = imageUrl
     } catch (requestError) {
       screenshotWindow.close()
       const message = requestError instanceof Error

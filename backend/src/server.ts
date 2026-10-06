@@ -2,7 +2,9 @@ import "dotenv/config"
 
 import express = require("express")
 import cors = require("cors")
+
 import { connectDatabase } from "./config/database"
+
 import authRoutes from "./routes/authRoutes"
 import materialRoutes from "./routes/materialRoutes"
 import aiTutorRoutes from "./routes/aiTutorRoutes"
@@ -12,7 +14,9 @@ import telegramRoutes from "./routes/telegramRoutes"
 import premiumRoutes from "./routes/premiumRoutes"
 import referralRoutes from "./routes/referralRoutes"
 import adminRoutes from "./routes/adminRoutes"
+
 import { configureTelegramWebhook } from "./controllers/telegramVerificationController"
+
 import {
   ensureExistingUsersHaveReferralCodes,
   migrateReferralRewardValues,
@@ -20,9 +24,13 @@ import {
 
 const app = express()
 const PORT = process.env.PORT || 5000
-const ADMIN_SCREENSHOT_FRONTEND_ORIGIN = "https://steady-mate.netlify.app"
 
-const getAllowedAdminScreenshotOrigin = (origin: string | undefined): string | false => {
+const ADMIN_SCREENSHOT_FRONTEND_ORIGIN =
+  "https://steady-mate.netlify.app"
+
+const getAllowedAdminScreenshotOrigin = (
+  origin: string | undefined
+): string | false => {
   const configuredFrontendOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((url) => {
@@ -33,40 +41,79 @@ const getAllowedAdminScreenshotOrigin = (origin: string | undefined): string | f
       }
     })
     .filter(Boolean)
+
   const allowedOrigins = new Set([
     ...configuredFrontendOrigins,
     ADMIN_SCREENSHOT_FRONTEND_ORIGIN,
     "http://localhost:5173",
   ])
+
   return origin && allowedOrigins.has(origin) ? origin : false
 }
 
 const adminScreenshotSessionCors = cors({
   origin: (origin, callback) => {
     const allowedOrigin = getAllowedAdminScreenshotOrigin(origin)
+
     console.info("[admin-screenshot-view]", {
       event: "cors_origin_check",
       origin: origin || "",
       allowed: Boolean(allowedOrigin),
     })
+
     callback(null, allowedOrigin)
   },
   credentials: true,
 })
 
-// Middleware
+// Global CORS
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = new Set([
+        ...(process.env.FRONTEND_URL || "")
+          .split(",")
+          .map((url) => {
+            try {
+              return new URL(url.trim()).origin
+            } catch {
+              return ""
+            }
+          })
+          .filter(Boolean),
+        "https://steady-mate.netlify.app",
+        "http://localhost:5173",
+      ])
+
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true)
+        return
+      }
+
+      callback(new Error("Not allowed by CORS"))
+    },
+    credentials: true,
+  })
+)
+
+// Screenshot session preflight
 app.options(
   "/api/admin/payments/:id/screenshot/view-session",
-  adminScreenshotSessionCors,
+  adminScreenshotSessionCors
 )
-app.use(cors())
-const isAdminScreenshotRequest = (req: express.Request): boolean =>
+
+// Screenshot request detection
+const isAdminScreenshotRequest = (
+  req: express.Request
+): boolean =>
   req.method === "GET" &&
   /^\/api\/admin\/payments\/[^/]+\/screenshot\/?$/.test(req.path)
 
+// Screenshot diagnostics
 app.use((req, res, next) => {
   if (isAdminScreenshotRequest(req)) {
     const paymentId = req.path.split("/")[4]
+
     console.info("[admin-screenshot]", {
       event: "request_received",
       paymentId,
@@ -74,6 +121,7 @@ app.use((req, res, next) => {
       contentEncoding: req.headers["content-encoding"] || "identity",
       contentLength: req.headers["content-length"] || "",
     })
+
     res.once("finish", () => {
       console.info("[admin-screenshot]", {
         event: "request_finished",
@@ -82,20 +130,36 @@ app.use((req, res, next) => {
       })
     })
   }
+
   next()
 })
+
 app.use(express.json())
-app.use((error: { status?: number; statusCode?: number; type?: string }, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (isAdminScreenshotRequest(req)) {
-    console.error("[admin-screenshot]", {
-      event: "pre_route_error",
-      paymentId: req.path.split("/")[4],
-      status: error.statusCode || error.status || 500,
-      type: error.type || "request_parser_error",
-    })
+
+// Request/parser error diagnostics
+app.use(
+  (
+    error: {
+      status?: number
+      statusCode?: number
+      type?: string
+    },
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if (isAdminScreenshotRequest(req)) {
+      console.error("[admin-screenshot]", {
+        event: "pre_route_error",
+        paymentId: req.path.split("/")[4],
+        status: error.statusCode || error.status || 500,
+        type: error.type || "request_parser_error",
+      })
+    }
+
+    next(error)
   }
-  next(error)
-})
+)
 
 // Routes
 app.use("/api/auth", authRoutes)
@@ -106,14 +170,20 @@ app.use("/api/study-content", studyContentRoutes)
 app.use("/api/telegram", telegramRoutes)
 app.use("/api/premium", premiumRoutes)
 app.use("/api/referrals", referralRoutes)
-app.use("/api/admin", adminScreenshotSessionCors, adminRoutes)
+
+// Admin routes use screenshot-session CORS
+app.use(
+  "/api/admin",
+  adminScreenshotSessionCors,
+  adminRoutes
+)
 
 // Health check
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     success: true,
     message: "Steady Mate backend is running",
-    database: "connected"
+    database: "connected",
   })
 })
 
@@ -121,7 +191,7 @@ app.get("/api/health", (_req, res) => {
 app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: "Welcome to Steady Mate API"
+    message: "Welcome to Steady Mate API",
   })
 })
 
@@ -129,6 +199,7 @@ app.get("/", (_req, res) => {
 const startServer = async (): Promise<void> => {
   try {
     await connectDatabase()
+
     await ensureExistingUsersHaveReferralCodes()
     await migrateReferralRewardValues()
     await configureTelegramWebhook()

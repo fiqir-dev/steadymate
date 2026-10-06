@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import jwt from "jsonwebtoken"
 import { Request, Response } from "express"
 
 import { Payment } from "../models/Payment"
@@ -116,36 +117,164 @@ export const getAdminPayments = async (
   }
 }
 
-export const getAdminPaymentScreenshot = async (
+const getPaymentImageContentType = (image: Buffer): string | null => {
+  if (
+    image.length >= 3 &&
+    image[0] === 0xff &&
+    image[1] === 0xd8 &&
+    image[2] === 0xff
+  ) {
+    return "image/jpeg"
+  }
+  if (
+    image.length >= 8 &&
+    image.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  ) {
+    return "image/png"
+  }
+  if (
+    image.length >= 6 &&
+    ["GIF87a", "GIF89a"].includes(image.toString("ascii", 0, 6))
+  ) {
+    return "image/gif"
+  }
+  if (
+    image.length >= 12 &&
+    image.toString("ascii", 0, 4) === "RIFF" &&
+    image.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "image/webp"
+  }
+  return null
+}
+
+const ADMIN_SCREENSHOT_VIEW_COOKIE = "admin_screenshot_view"
+const ADMIN_SCREENSHOT_VIEW_COOKIE_TTL_MS = 2 * 60 * 1000
+
+export const createAdminPaymentScreenshotViewSession = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const paymentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret || !req.userId) {
+    res.status(401).json({ success: false, message: "Authentication required" })
+    return
+  }
+
   try {
     const payment = await Payment.findOne({
-      _id: req.params.id,
+      _id: paymentId,
       type: { $in: ["premium", null] },
     }).select("telegramFileId")
-
     if (!payment?.telegramFileId) {
       res.status(404).json({ success: false, message: "Payment screenshot not found" })
       return
     }
 
-    const file = await getTelegramFile(payment.telegramFileId)
-    const contentType = file.headers.get("content-type") || ""
-    const safeImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"])
-    if (!safeImageTypes.has(contentType.split(";")[0].trim().toLowerCase())) {
-      res.status(415).json({ success: false, message: "Payment attachment is not an image" })
+    const token = jwt.sign(
+      { userId: req.userId, role: "admin", purpose: "admin-screenshot-view" },
+      jwtSecret,
+      { expiresIn: "2m" },
+    )
+    const viewPath = `/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view`
+    res.cookie(ADMIN_SCREENSHOT_VIEW_COOKIE, token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: viewPath,
+      maxAge: ADMIN_SCREENSHOT_VIEW_COOKIE_TTL_MS,
+    })
+    res.status(204).end()
+  } catch (error) {
+    console.error("Create admin screenshot view session error:", error)
+    res.status(500).json({ success: false, message: "Unable to prepare screenshot view" })
+  }
+}
+
+export const getAdminPaymentScreenshot = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const paymentId = req.params.id
+  let stage = "payment_lookup"
+  let telegramFileId = ""
+  console.info("[admin-screenshot]", {
+    event: "controller_entered",
+    paymentId,
+  })
+  res.once("finish", () => {
+    console.info("[admin-screenshot]", {
+      event: "controller_response_finished",
+      paymentId,
+      status: res.statusCode,
+    })
+  })
+  try {
+    const payment = await Payment.findOne({
+      _id: paymentId,
+      type: { $in: ["premium", null] },
+    }).select("telegramFileId")
+    console.info("[admin-screenshot]", {
+      event: "payment_lookup",
+      paymentId,
+      paymentExists: Boolean(payment),
+      fileIdPresent: Boolean(payment?.telegramFileId),
+    })
+    telegramFileId = payment?.telegramFileId || ""
+
+    if (!payment?.telegramFileId) {
+      console.info("[admin-screenshot]", {
+        event: "response",
+        paymentId,
+        status: 404,
+      })
+      res.status(404).json({ success: false, message: "Payment screenshot not found" })
       return
     }
+
+    stage = "telegram_file_download"
+    const file = await getTelegramFile(payment.telegramFileId, (event, details) => {
+      console.info("[admin-screenshot]", { event, paymentId, ...details })
+    })
     const declaredLength = Number(file.headers.get("content-length"))
     if (Number.isFinite(declaredLength) && declaredLength > 10 * 1024 * 1024) {
+      console.info("[admin-screenshot]", {
+        event: "response",
+        paymentId,
+        status: 413,
+        declaredLength,
+      })
       res.status(413).json({ success: false, message: "Payment screenshot is too large" })
       return
     }
     const image = Buffer.from(await file.arrayBuffer())
+    const contentType = getPaymentImageContentType(image)
+    console.info("[admin-screenshot]", {
+      event: "downloaded_image",
+      paymentId,
+      byteLength: image.length,
+      telegramContentType: file.headers.get("content-type") || "",
+      detectedImageType: contentType,
+    })
     if (image.length > 10 * 1024 * 1024) {
+      console.info("[admin-screenshot]", {
+        event: "response",
+        paymentId,
+        status: 413,
+        byteLength: image.length,
+      })
       res.status(413).json({ success: false, message: "Payment screenshot is too large" })
+      return
+    }
+    if (!contentType) {
+      console.info("[admin-screenshot]", {
+        event: "response",
+        paymentId,
+        status: 502,
+        reason: "telegram_file_is_not_a_supported_image",
+      })
+      res.status(502).json({ success: false, message: "Telegram returned an unsupported payment screenshot" })
       return
     }
 
@@ -153,8 +282,30 @@ export const getAdminPaymentScreenshot = async (
     res.setHeader("X-Content-Type-Options", "nosniff")
     res.setHeader("Content-Type", contentType)
     res.status(200).send(image)
+    console.info("[admin-screenshot]", {
+      event: "response",
+      paymentId,
+      status: 200,
+      contentType,
+      byteLength: image.length,
+    })
   } catch (error) {
-    console.error("Get admin payment screenshot error:", error)
+    const errorStatus = error && typeof error === "object" && "status" in error
+      ? Number(error.status)
+      : undefined
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const safeErrorMessage = [process.env.TELEGRAM_BOT_TOKEN, telegramFileId]
+      .filter((secret): secret is string => Boolean(secret))
+      .reduce((message, secret) => message.split(secret).join("[REDACTED]"), errorMessage)
+    console.error("[admin-screenshot]", {
+      event: "failure",
+      paymentId,
+      stage,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: safeErrorMessage,
+      errorStatus: Number.isInteger(errorStatus) ? errorStatus : undefined,
+      responseStatus: 502,
+    })
     res.status(502).json({
       success: false,
       message: "Unable to retrieve payment screenshot from Telegram",

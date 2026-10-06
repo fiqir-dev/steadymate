@@ -45,6 +45,42 @@ export const requireAuth = (
   }
 }
 
+export const requireScreenshotViewAuth = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const screenshotViewCookie = req.headers.cookie
+    ?.split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith("admin_screenshot_view="))
+    ?.slice("admin_screenshot_view=".length)
+  const jwtSecret = process.env.JWT_SECRET
+
+  if (!screenshotViewCookie || !jwtSecret) {
+    res.status(401).json({ success: false, message: "Authentication required" })
+    return
+  }
+
+  try {
+    const payload = jwt.verify(decodeURIComponent(screenshotViewCookie), jwtSecret)
+    if (
+      typeof payload !== "object" ||
+      !payload.userId ||
+      payload.role !== "admin" ||
+      payload.purpose !== "admin-screenshot-view"
+    ) {
+      res.status(401).json({ success: false, message: "Invalid authentication token" })
+      return
+    }
+    req.userId = String(payload.userId)
+    req.userRole = "admin"
+    next()
+  } catch {
+    res.status(401).json({ success: false, message: "Invalid or expired authentication token" })
+  }
+}
+
 export const requireAdmin = (
   req: Request,
   res: Response,

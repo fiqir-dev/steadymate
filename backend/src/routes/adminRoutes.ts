@@ -3,6 +3,7 @@ import express from "express"
 import {
   approvePayment,
   approveReferralReward,
+  createAdminPaymentScreenshotViewSession,
   getAdminDashboard,
   getAdminPayments,
   getAdminPaymentScreenshot,
@@ -14,9 +15,20 @@ import {
   rejectPayment,
   reviewReferralWithdrawal,
 } from "../controllers/adminController"
-import { requireAdmin, requireAuth } from "../middleware/authMiddleware"
+import {
+  requireAdmin,
+  requireAuth,
+  requireScreenshotViewAuth,
+} from "../middleware/authMiddleware"
 
 const router = express.Router()
+
+router.get(
+  "/payments/:id/screenshot/view",
+  requireScreenshotViewAuth,
+  requireAdmin,
+  getAdminPaymentScreenshot,
+)
 
 router.use(requireAuth)
 router.use(requireAdmin)
@@ -24,6 +36,10 @@ router.use(requireAdmin)
 router.get("/dashboard", getAdminDashboard)
 router.get("/payments", getAdminPayments)
 router.get("/payments/:id/screenshot", getAdminPaymentScreenshot)
+router.post(
+  "/payments/:id/screenshot/view-session",
+  createAdminPaymentScreenshotViewSession,
+)
 router.post("/payments/:id/approve", approvePayment)
 router.post("/payments/:id/reject", rejectPayment)
 router.get("/referrals", getAdminReferrals)

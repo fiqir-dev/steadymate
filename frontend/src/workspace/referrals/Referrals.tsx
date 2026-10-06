@@ -140,7 +140,9 @@ function Referrals() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.message || "Unable to request withdrawal")
+      if (!response.ok) {
+        throw new Error(`Withdrawal unavailable: ${data.message || "Unable to request withdrawal"}`)
+      }
       setWithdrawalNotice(data.message || "Your request is pending admin review.")
 
       const updated = await fetch(`${API_URL}/api/referrals/me`, {
@@ -358,108 +360,100 @@ function Referrals() {
               {summary.successfulReferralEarnings} ETB earned from approved Premium referral payments
             </p>
 
-            {!summary.withdrawalEligible ? (
-              <div className="withdrawal-locked">
-                <strong>Withdrawal locked</strong>
-                {summary.successfulReferralCount < summary.minimumSuccessfulReferrals ? (
-                  <p>
-                    You need at least {summary.minimumSuccessfulReferrals} successful Premium referrals to withdraw your earnings.
-                  </p>
-                ) : (
-                  <p>You need at least {summary.minimumWithdrawalAmount} ETB available.</p>
-                )}
-                <button type="button" className="btn btn-primary" disabled>
-                  Withdraw
-                </button>
-              </div>
-            ) : (
-              <div className="withdrawal-unlocked">
-                <strong>Withdrawal unlocked ✓</strong>
-                <p><strong>Available balance: {summary.availableBalance} ETB</strong></p>
-                <label htmlFor="referral-withdrawal-amount">Withdrawal amount (ETB)</label>
-                <input
-                  id="referral-withdrawal-amount"
-                  type="number"
-                  min={summary.minimumWithdrawalAmount}
-                  max={summary.availableBalance}
-                  step="0.01"
-                  value={withdrawalAmount}
-                  onChange={(event) => setWithdrawalAmount(event.target.value)}
-                  placeholder={`${summary.minimumWithdrawalAmount}`}
-                  required
-                />
-                <label htmlFor="referral-payment-method">Withdrawal method</label>
-                <select
-                  id="referral-payment-method"
-                  value={paymentMethod}
-                  onChange={(event) => setPaymentMethod(event.target.value as "bank_transfer" | "telebirr")}
-                >
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="telebirr">Telebirr</option>
-                </select>
-                <label htmlFor="referral-account-holder">Account holder name</label>
-                <input
-                  id="referral-account-holder"
-                  type="text"
-                  autoComplete="name"
-                  maxLength={120}
-                  value={accountHolderName}
-                  onChange={(event) => setAccountHolderName(event.target.value)}
-                  required
-                />
-                {paymentMethod === "bank_transfer" ? (
-                  <>
-                    <label htmlFor="referral-bank-name">Bank name/type</label>
-                    <input
-                      id="referral-bank-name"
-                      type="text"
-                      maxLength={120}
-                      value={bankName}
-                      onChange={(event) => setBankName(event.target.value)}
-                      required
-                    />
-                    <label htmlFor="referral-account-number">Account number</label>
-                    <input
-                      id="referral-account-number"
-                      type="text"
-                      autoComplete="off"
-                      maxLength={80}
-                      value={accountNumber}
-                      onChange={(event) => setAccountNumber(event.target.value)}
-                      required
-                    />
-                  </>
-                ) : (
-                  <>
-                    <label htmlFor="referral-telebirr-phone">Telebirr phone number</label>
-                    <input
-                      id="referral-telebirr-phone"
-                      type="tel"
-                      autoComplete="tel"
-                      maxLength={40}
-                      value={telebirrPhone}
-                      onChange={(event) => setTelebirrPhone(event.target.value)}
-                      required
-                    />
-                  </>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={requestWithdrawal}
-                  disabled={
-                    requestingWithdrawal ||
-                    !withdrawalAmount ||
-                    !accountHolderName.trim() ||
-                    (paymentMethod === "bank_transfer"
-                      ? !bankName.trim() || !accountNumber.trim()
-                      : !telebirrPhone.trim())
-                  }
-                >
-                  {requestingWithdrawal ? "Submitting..." : "Withdraw"}
-                </button>
-              </div>
-            )}
+            <div className="withdrawal-unlocked">
+              <strong>Request a withdrawal</strong>
+              <p><strong>Available balance: {summary.availableBalance} ETB</strong></p>
+              <label htmlFor="referral-withdrawal-amount">Withdrawal amount (ETB)</label>
+              <input
+                id="referral-withdrawal-amount"
+                type="number"
+                min={summary.minimumWithdrawalAmount}
+                max={summary.availableBalance}
+                step="0.01"
+                value={withdrawalAmount}
+                onChange={(event) => setWithdrawalAmount(event.target.value)}
+                placeholder={`${summary.minimumWithdrawalAmount}`}
+                required
+              />
+              <label htmlFor="referral-payment-method">Withdrawal method</label>
+              <select
+                id="referral-payment-method"
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as "bank_transfer" | "telebirr")}
+              >
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="telebirr">Telebirr</option>
+              </select>
+              <label htmlFor="referral-account-holder">Account holder name</label>
+              <input
+                id="referral-account-holder"
+                type="text"
+                autoComplete="name"
+                maxLength={120}
+                value={accountHolderName}
+                onChange={(event) => setAccountHolderName(event.target.value)}
+                required
+              />
+              {paymentMethod === "bank_transfer" ? (
+                <>
+                  <label htmlFor="referral-bank-name">Bank name/type</label>
+                  <input
+                    id="referral-bank-name"
+                    type="text"
+                    maxLength={120}
+                    value={bankName}
+                    onChange={(event) => setBankName(event.target.value)}
+                    required
+                  />
+                  <label htmlFor="referral-account-number">Account number</label>
+                  <input
+                    id="referral-account-number"
+                    type="text"
+                    autoComplete="off"
+                    maxLength={80}
+                    value={accountNumber}
+                    onChange={(event) => setAccountNumber(event.target.value)}
+                    required
+                  />
+                </>
+              ) : (
+                <>
+                  <label htmlFor="referral-telebirr-phone">Telebirr phone number</label>
+                  <input
+                    id="referral-telebirr-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    maxLength={40}
+                    value={telebirrPhone}
+                    onChange={(event) => setTelebirrPhone(event.target.value)}
+                    required
+                  />
+                </>
+              )}
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={requestWithdrawal}
+                disabled={
+                  requestingWithdrawal ||
+                  !withdrawalAmount ||
+                  !accountHolderName.trim() ||
+                  (paymentMethod === "bank_transfer"
+                    ? !bankName.trim() || !accountNumber.trim()
+                    : !telebirrPhone.trim())
+                }
+              >
+                {requestingWithdrawal ? "Submitting..." : "Submit Withdrawal"}
+              </button>
+            </div>
+            <div className="referral-withdrawal-rule">
+              <strong>Withdrawal requirements:</strong>
+              <ul>
+                <li>{summary.minimumSuccessfulReferrals} successful Premium referrals</li>
+                <li>Minimum withdrawal: {summary.minimumWithdrawalAmount} ETB</li>
+                <li>Available balance must cover the request</li>
+              </ul>
+            </div>
           </section>
 
           {summary.withdrawals.length > 0 && (

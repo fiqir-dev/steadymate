@@ -17,11 +17,18 @@ type DashboardSummary = {
   referralReward: number
 }
 
+type AdminUserReference = string | {
+  _id?: string
+  id?: string
+  name?: string
+  email?: string
+} | null
+
 type PaymentRecord = {
   id: string
   studentName: string
   studentEmail: string
-  userId: string
+  userId: AdminUserReference
   amount: number
   currency: string
   paymentMethod: string
@@ -35,8 +42,8 @@ type PaymentRecord = {
 
 type ReferralReward = {
   id: string
-  referrer?: { name?: string; email?: string }
-  referredUser?: { name?: string; email?: string }
+  referrer?: AdminUserReference
+  referredUser?: AdminUserReference
   payment?: { amount?: number; status?: string; submittedAt?: string }
   amount: number
   percentage: number
@@ -45,7 +52,7 @@ type ReferralReward = {
 }
 
 type ReferralAccountSummary = {
-  referrer: { id: string; name: string; email: string } | null
+  referrer: AdminUserReference
   successfulReferrals: number
   totalEarnings: number
   availableBalance: number
@@ -54,7 +61,7 @@ type ReferralAccountSummary = {
 
 type WithdrawalRecord = {
   id: string
-  user?: { id?: string; name?: string; email?: string }
+  user?: AdminUserReference
   amount: number
   status: "pending" | "approved" | "paid" | "rejected"
   paymentMethod: "bank_transfer" | "telebirr" | "unknown"
@@ -82,43 +89,63 @@ type UserRecord = {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"
 
-function AdminPaymentScreenshot({ paymentId, screenshotUrl }: { paymentId: string; screenshotUrl: string }) {
-  const [imageUrl, setImageUrl] = useState("")
-  const [failed, setFailed] = useState(false)
+function getAdminUserId(user: AdminUserReference | undefined) {
+  return typeof user === "string" ? user : user?._id || user?.id || ""
+}
+
+function getAdminUserName(user: AdminUserReference | undefined, fallback = "") {
+  return typeof user === "string" ? user : user?.name || fallback
+}
+
+function getAdminUserEmail(user: AdminUserReference | undefined) {
+  return typeof user === "string" ? "" : user?.email || ""
+}
+
+function AdminPaymentScreenshot({ paymentId }: { paymentId: string }) {
+  const [viewReady, setViewReady] = useState(false)
+  const [failureMessage, setFailureMessage] = useState("")
 
   useEffect(() => {
     const token = sessionStorage.getItem("steadymate_token")
-    if (!token || !screenshotUrl) return
-
-    let objectUrl = ""
+    if (!token) {
+      setFailureMessage("Unable to prepare screenshot link.")
+      return
+    }
     let cancelled = false
-    fetch(`${API_URL}${screenshotUrl}`, {
+    const viewSessionUrl = `${API_URL}/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view-session`
+    fetch(viewSessionUrl, {
+      method: "POST",
+      credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(async (response) => {
+      .then((response) => {
         if (!response.ok) {
-          throw new Error("Screenshot unavailable")
+          throw new Error(`Unable to prepare screenshot link (HTTP ${response.status})`)
         }
-        return response.blob()
+        if (!cancelled) setViewReady(true)
       })
-      .then((image) => {
-        if (cancelled) return
-        objectUrl = URL.createObjectURL(image)
-        setImageUrl(objectUrl)
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true)
+      .catch((requestError: unknown) => {
+        const message = requestError instanceof Error ? requestError.message : "Network request failed"
+        if (!cancelled) setFailureMessage(`Screenshot failed: ${message}`)
       })
 
     return () => {
       cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [paymentId, screenshotUrl])
+  }, [paymentId])
 
-  if (failed) return <p className="admin-screenshot-note">Screenshot is currently unavailable.</p>
-  if (!imageUrl) return <p className="admin-screenshot-note">Loading payment screenshot…</p>
-  return <img className="admin-payment-screenshot" src={imageUrl} alt="Student payment screenshot" />
+  if (failureMessage) return <p className="admin-screenshot-note">{failureMessage}</p>
+  if (!viewReady) return <p className="admin-screenshot-note">Preparing screenshot link…</p>
+  return (
+    <a
+      className="btn btn-secondary"
+      href={`${API_URL}/api/admin/payments/${encodeURIComponent(paymentId)}/screenshot/view`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View Screenshot ↗
+    </a>
+  )
 }
 
 function Admin() {
@@ -428,7 +455,7 @@ function Admin() {
                 <span className={`status-pill ${payment.status}`}>{payment.status}</span>
               </div>
               <div className="admin-card-meta">
-                <span>User ID: {payment.userId}</span>
+                <span>User ID: {getAdminUserId(payment.userId) || "N/A"}</span>
                 <span>Amount: {payment.amount} ETB</span>
                 <span>
                   Method: {payment.paymentMethod === "bank"
@@ -444,10 +471,7 @@ function Admin() {
                 <span>Telegram chat: {payment.telegramChatId || "N/A"}</span>
               </div>
               {payment.hasScreenshot && payment.screenshotUrl && (
-                <AdminPaymentScreenshot
-                  paymentId={payment.id}
-                  screenshotUrl={payment.screenshotUrl}
-                />
+                <AdminPaymentScreenshot paymentId={payment.id} />
               )}
 
               {payment.status === "pending" && (
@@ -471,11 +495,11 @@ function Admin() {
         </div>
         <div className="admin-list">
           {referralSummaries.map((summary) => (
-            <article className="admin-card" key={summary.referrer?.id}>
+            <article className="admin-card" key={getAdminUserId(summary.referrer)}>
               <div className="admin-card-head">
                 <div>
-                  <strong>{summary.referrer?.name || "Unknown referrer"}</strong>
-                  <small>{summary.referrer?.email || ""}</small>
+                  <strong>{getAdminUserName(summary.referrer, "Unknown referrer")}</strong>
+                  <small>{getAdminUserEmail(summary.referrer)}</small>
                 </div>
                 <span className={`status-pill ${summary.withdrawalEligible ? "approved" : "pending"}`}>
                   {summary.withdrawalEligible ? "Eligible" : "Locked"}
@@ -495,8 +519,8 @@ function Admin() {
             <article className="admin-card" key={withdrawal.id}>
               <div className="admin-card-head">
                 <div>
-                  <strong>{withdrawal.user?.name || "Unknown user"}</strong>
-                  <small>{withdrawal.user?.email || ""}</small>
+                  <strong>{getAdminUserName(withdrawal.user, "Unknown user")}</strong>
+                  <small>{getAdminUserEmail(withdrawal.user)}</small>
                 </div>
                 <span className={`status-pill ${withdrawal.status}`}>{withdrawal.status}</span>
               </div>
@@ -573,13 +597,13 @@ function Admin() {
             <article className="admin-card" key={reward.id}>
               <div className="admin-card-head">
                 <div>
-                  <strong>{reward.referrer?.name || "Unknown referrer"}</strong>
-                  <small>{reward.referrer?.email || ""}</small>
+                  <strong>{getAdminUserName(reward.referrer, "Unknown referrer")}</strong>
+                  <small>{getAdminUserEmail(reward.referrer)}</small>
                 </div>
                 <span className={`status-pill ${reward.status}`}>{reward.status}</span>
               </div>
               <div className="admin-card-meta">
-                <span>Referred user: {reward.referredUser?.name || "Unknown"}</span>
+                <span>Referred user: {getAdminUserName(reward.referredUser, "Unknown")}</span>
                 <span>Amount: {reward.amount} ETB</span>
                 <span>Payment: {reward.payment?.status || "N/A"}</span>
                 <span>

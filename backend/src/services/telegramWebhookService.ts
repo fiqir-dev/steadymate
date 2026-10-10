@@ -82,6 +82,34 @@ export const configureTelegramWebhook = async (): Promise<boolean> => {
       console.error("Telegram webhook registration failed; Telegram rejected the setup request.")
       return false
     }
+
+    const commandsResponse = await fetch(
+      `https://api.telegram.org/bot${botToken}/setMyCommands`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          commands: [
+            { command: "start", description: "Open the Steady Mate main menu" },
+            { command: "help", description: "View help and FAQ" },
+            { command: "premium", description: "Start Premium payment" },
+            { command: "feedback", description: "Send feedback" },
+            { command: "complaint", description: "Report a problem" },
+            { command: "referral", description: "Check referral earnings" },
+            { command: "withdraw", description: "Open withdrawal instructions" },
+            { command: "cancel", description: "Cancel the current action" },
+          ],
+        }),
+        signal: AbortSignal.timeout(10000),
+      },
+    )
+    const commandsResult = await commandsResponse.json() as {
+      ok?: boolean
+    }
+    if (!commandsResponse.ok || commandsResult.ok !== true) {
+      console.error("Telegram command list registration failed; webhook remains active.")
+    }
+
     console.log("Telegram bot connected; webhook registered successfully.")
     return true
   } catch {

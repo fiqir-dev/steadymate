@@ -1,9 +1,23 @@
+type TelegramInlineKeyboardButton =
+  | {
+      text: string
+      callback_data: string
+      url?: never
+    }
+  | {
+      text: string
+      url: string
+      callback_data?: never
+    }
+
+type TelegramInlineKeyboardMarkup = {
+  inline_keyboard: TelegramInlineKeyboardButton[][]
+}
+
 export const sendTelegramMessage = async (
   chatId: number | string,
   text: string,
-  replyMarkup?: {
-    inline_keyboard: Array<Array<{ text: string; callback_data: string }>>
-  },
+  replyMarkup?: TelegramInlineKeyboardMarkup,
 ): Promise<void> => {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   if (!botToken) throw new Error("Telegram bot is not configured")

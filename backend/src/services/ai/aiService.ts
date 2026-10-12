@@ -78,6 +78,146 @@ export interface QuizQuestion {
 }
 
 const MAX_INPUT_CHARACTERS = 15000
+const VISION_MODEL =
+  process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b"
+
+export type VisionImage = {
+  mimeType: string
+  data: Buffer
+}
+
+const requireApiKey = () => {
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY is not configured")
+  }
+}
+
+export const getSafeAiErrorMessage = (error: unknown): string => {
+  if (!error || typeof error !== "object") {
+    return "SteadyMate AI could not process the request right now."
+  }
+
+  const details = error as {
+    status?: number
+    code?: string
+    error?: { code?: string; type?: string }
+  }
+  const code = details.code || details.error?.code
+
+  if (code === "model_not_found") {
+    return "The configured image AI model is unavailable. Please contact support."
+  }
+  if (details.status === 401 || details.status === 403) {
+    return "SteadyMate AI authentication is unavailable. Please contact support."
+  }
+  if (details.status === 429) {
+    return "SteadyMate AI is busy right now. Please try again shortly."
+  }
+  if (details.status === 400) {
+    return "The image could not be processed. Check that it is a clear JPEG, PNG, or WebP image."
+  }
+
+  return "SteadyMate AI could not process the request right now."
+}
+
+export const generateTopicMaterial = async (
+  topic: string,
+): Promise<string> => {
+  requireApiKey()
+  const cleanedTopic = topic.trim()
+  if (!cleanedTopic) throw new Error("Topic is required")
+
+  const completion = await groq.chat.completions.create({
+    model: "openai/gpt-oss-20b",
+    temperature: 0.25,
+    max_completion_tokens: 5000,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a reliable educational content writer. Return only accurate, well-structured plain text study material. Do not invent uncertainty as fact.",
+      },
+      {
+        role: "user",
+        content: `Create clear study material for the topic "${cleanedTopic}". Include an overview, core concepts, important definitions, formulas or facts where relevant, step-by-step processes, and a short worked example or practice guidance when appropriate. Use headings and concise explanations. Do not mention these instructions.`,
+      },
+    ],
+  })
+
+  const content = completion.choices[0]?.message?.content?.trim()
+  if (!content) throw new Error("AI returned empty topic material")
+  return content
+}
+
+export const generateMaterialFromImages = async (
+  images: VisionImage[],
+  topic?: string,
+): Promise<string> => {
+  requireApiKey()
+  if (!images.length) throw new Error("At least one image is required")
+
+  const imageContent = images.map((image) => ({
+    type: "image_url" as const,
+    image_url: {
+      url: `data:${image.mimeType};base64,${image.data.toString("base64")}`,
+    },
+  }))
+
+  const prompt = `Read and understand the educational image${images.length === 1 ? "" : "s"} carefully. Extract visible text, formulas, examples, diagrams, and questions accurately, then turn the content into useful study material with headings, core ideas, definitions, facts, processes, and revision guidance. Preserve formulas and important relationships. If any part is unreadable, clearly mark it as unclear instead of guessing.${topic?.trim() ? ` The student provided this topic guidance: "${topic.trim()}". Use it only to organize or clarify the uploaded content.` : ""}`
+
+  const completion = await groq.chat.completions.create({
+    model: VISION_MODEL,
+    temperature: 0.2,
+    max_completion_tokens: 6000,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a careful educational vision assistant. Never invent content that is not visible.",
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: prompt }, ...imageContent],
+      },
+    ],
+  })
+
+  const content = completion.choices[0]?.message?.content?.trim()
+  if (!content) throw new Error("AI returned empty image material")
+  return content
+}
+
+export const generateVisionTutorResponse = async (
+  message: string,
+  images: VisionImage[],
+  materialContext = "",
+): Promise<string> => {
+  requireApiKey()
+  const imageContent = images.map((image) => ({
+    type: "image_url" as const,
+    image_url: {
+      url: `data:${image.mimeType};base64,${image.data.toString("base64")}`,
+    },
+  }))
+  const completion = await groq.chat.completions.create({
+    model: VISION_MODEL,
+    temperature: 0.35,
+    max_completion_tokens: 4096,
+    messages: [
+      {
+        role: "system",
+        content: `You are SteadyMate AI, a careful and helpful study tutor. Explain visible educational content step by step, preserve formulas and diagrams accurately, and say when something is unreadable instead of guessing. Use the selected material as additional context when supplied.${materialContext}`,
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: message.trim() }, ...imageContent],
+      },
+    ],
+  })
+  const reply = completion.choices[0]?.message?.content?.trim()
+  if (!reply) throw new Error("AI returned an empty response")
+  return reply
+}
 
 const prepareMaterial = (content: string): string => {
   const cleaned = content

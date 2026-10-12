@@ -9,6 +9,13 @@ import {
   reserveMaterialCapacity,
 } from "../services/plans/planService"
 import { respondWithLimit } from "../middleware/planLimits"
+import {
+  generateMaterialFromImages,
+  generateTopicMaterial,
+  getSafeAiErrorMessage,
+  type VisionImage,
+} from "../services/ai/aiService"
+import { createOperationTimer } from "../utils/operationTiming"
 
 // =========================================================
 // LIST MATERIALS
@@ -104,6 +111,7 @@ export const uploadMaterial = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const timer = createOperationTimer("material.upload")
   try {
     if (!req.file) {
       res.status(400).json({
@@ -156,6 +164,7 @@ export const uploadMaterial = async (
         "utf8",
       )
     }
+    timer.mark("extractionMs")
 
     // ---------------------------------------------
     // Save material
@@ -165,6 +174,7 @@ export const uploadMaterial = async (
       req.userId,
       req.file.size,
     )
+    timer.mark("capacityMs")
     if (!capacity.allowed) {
       try {
         await fs.promises.unlink(req.file.path)
@@ -195,6 +205,8 @@ export const uploadMaterial = async (
       }
       throw error
     }
+    timer.mark("databaseSaveMs")
+    timer.finish()
 
     res.status(201).json({
       success: true,
@@ -203,6 +215,7 @@ export const uploadMaterial = async (
       material,
     })
   } catch (error) {
+    timer.finish({ outcome: "error" })
     console.error(
       "Upload material error:",
       error,
@@ -236,6 +249,7 @@ export const createTextMaterial = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const timer = createOperationTimer("material.text")
   try {
     const {
       title,
@@ -303,6 +317,8 @@ export const createTextMaterial = async (
       }
       throw error
     }
+    timer.mark("databaseSaveMs")
+    timer.finish()
 
     res.status(201).json({
       success: true,
@@ -311,6 +327,7 @@ export const createTextMaterial = async (
       material,
     })
   } catch (error) {
+    timer.finish({ outcome: "error" })
     console.error(
       "Create text material error:",
       error,
@@ -320,6 +337,79 @@ export const createTextMaterial = async (
       success: false,
       message:
         "Unable to save study text",
+    })
+  }
+}
+
+export const createGuidedMaterial = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const files = Array.isArray(req.files) ? req.files : []
+
+  try {
+    if (!req.userId) {
+      res.status(401).json({ success: false, message: "Authentication required" })
+      return
+    }
+
+    const topic =
+      typeof req.body.topic === "string" ? req.body.topic.trim() : ""
+    if (!topic && files.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Enter a topic or upload at least one image",
+      })
+      return
+    }
+
+    const images: VisionImage[] = files.map((file) => ({
+      mimeType: file.mimetype,
+      data: file.buffer,
+    }))
+    const content = images.length
+      ? await generateMaterialFromImages(images, topic)
+      : await generateTopicMaterial(topic)
+    const title = topic || "Image-based study material"
+    const size =
+      files.reduce((total, file) => total + file.size, 0) ||
+      Buffer.byteLength(content, "utf8")
+
+    const capacity = await reserveMaterialCapacity(req.userId, size)
+    if (!capacity.allowed) {
+      respondWithLimit(res, capacity)
+      return
+    }
+
+    try {
+      const material = await Material.create({
+        userId: req.userId,
+        title,
+        originalName:
+          files.length > 0
+            ? files.map((file) => file.originalname).join(", ")
+            : `${title}.txt`,
+        fileName: "",
+        filePath: "",
+        mimeType:
+          files.length > 0 ? "application/x-study-images" : "text/plain",
+        size,
+        content,
+      })
+      res.status(201).json({
+        success: true,
+        message: "Study material created successfully",
+        material,
+      })
+    } catch (error) {
+      await releaseMaterialCapacity(req.userId, size)
+      throw error
+    }
+  } catch (error) {
+    console.error("Guided material creation error:", error)
+    res.status(502).json({
+      success: false,
+      message: getSafeAiErrorMessage(error),
     })
   }
 }

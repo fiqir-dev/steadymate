@@ -4,10 +4,14 @@ import path from "path"
 import fs from "fs"
 
 import { requireAuth } from "../middleware/authMiddleware"
-import { enforceMaterialCapacity } from "../middleware/planLimits"
+import {
+  enforceMaterialCapacity,
+  requirePremiumPlan,
+} from "../middleware/planLimits"
 
 import {
   createTextMaterial,
+  createGuidedMaterial,
   getMaterial,
   listMaterials,
   uploadMaterial,
@@ -68,6 +72,25 @@ const upload = multer({
   },
 })
 
+const guidedImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 8 * 1024 * 1024,
+    files: 3,
+  },
+  fileFilter: (_req, file, callback) => {
+    if (
+      ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
+        file.mimetype,
+      )
+    ) {
+      callback(null, true)
+      return
+    }
+    callback(new Error("Only JPEG, PNG, and WebP images are supported"))
+  },
+})
+
 const router = express.Router()
 
 router.get(
@@ -95,6 +118,15 @@ router.post(
   requireAuth,
   enforceMaterialCapacity,
   createTextMaterial,
+)
+
+router.post(
+  "/guided",
+  requireAuth,
+  requirePremiumPlan,
+  enforceMaterialCapacity,
+  guidedImageUpload.array("images", 3),
+  createGuidedMaterial,
 )
 
 router.delete(

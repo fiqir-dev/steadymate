@@ -3,9 +3,11 @@ import { NextFunction, Request, Response } from "express"
 import {
   checkMaterialAllowance,
   consumeFeatureUsage,
+  getActivePlan,
   PlanName,
   UsagePeriod,
 } from "../services/plans/planService"
+import { User } from "../models/User"
 
 type LimitedFeature = "notes" | "flashcards" | "quizzes" | "aiTutor"
 
@@ -83,6 +85,51 @@ export const consumeRequestFeatureUsage = async (
       message: "Unable to verify your account usage limits",
     })
     return false
+  }
+}
+
+export const requirePremiumPlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      })
+      return
+    }
+
+    const user = await User.findById(req.userId).select(
+      "isPremium premiumExpiresAt",
+    )
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: "Student account not found",
+      })
+      return
+    }
+
+    if (getActivePlan(user) !== "premium") {
+      res.status(403).json({
+        success: false,
+        code: "PREMIUM_REQUIRED",
+        message:
+          "This feature is available to Premium students. Upgrade to Premium to generate materials from topics or screenshots and attach images to AI Tutor.",
+      })
+      return
+    }
+
+    next()
+  } catch (error) {
+    console.error("Premium access check failed:", error)
+    res.status(500).json({
+      success: false,
+      message: "Unable to verify your Premium access",
+    })
   }
 }
 
